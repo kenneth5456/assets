@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#C9A84C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="번역기">
+<link rel="manifest" href="manifest.json">
+<title>EN ↔ FR 번역기</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0D1B2A; --ivory: #F5F0E8; --gold: #C9A84C;
+  --gold-light: #E8D5A3; --gray: #8A8070; --cream: #EDE8DC;
+}
+body {
+  background: var(--navy); color: var(--ivory);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 70% 40% at 15% 15%, rgba(201,168,76,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 50% at 85% 85%, rgba(201,168,76,0.05) 0%, transparent 60%);
+}
+.app { display: flex; flex-direction: column; flex: 1; max-width: 480px; margin: 0 auto; width: 100%; padding: 0 16px 24px; position: relative; z-index: 1; }
+
+header { text-align: center; padding: 28px 0 20px; }
+.badge { font-size: 10px; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; border: 1px solid rgba(201,168,76,0.3); padding: 4px 12px; border-radius: 2px; display: inline-block; margin-bottom: 10px; }
+h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; }
+h1 em { font-style: italic; color: var(--gold); }
+.subtitle { font-size: 12px; color: var(--gray); letter-spacing: 0.08em; margin-top: 4px; }
+
+.direction-toggle { display: flex; background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.2); border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+.toggle-btn { flex: 1; padding: 11px 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; background: transparent; color: var(--gray); border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.toggle-btn .flag { font-size: 15px; }
+.toggle-btn.active { background: var(--gold); color: var(--navy); }
+.toggle-divider { width: 1px; background: rgba(201,168,76,0.2); }
+
+.panel { margin-bottom: 8px; }
+.panel-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.panel-label::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.15); }
+
+textarea { width: 100%; background: rgba(0,0,0,0.25); border: 1px solid rgba(201,168,76,0.2); border-radius: 3px; color: var(--ivory); font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 300; line-height: 1.6; padding: 12px 14px; resize: none; height: 120px; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+textarea::placeholder { color: rgba(138,128,112,0.45); }
+textarea:focus { border-color: rgba(201,168,76,0.5); }
+textarea[readonly] { background: rgba(0,0,0,0.15); color: var(--gold-light); }
+
+.swap-row { display: flex; justify-content: center; margin: 4px 0; }
+.swap-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(201,168,76,0.3); background: transparent; color: var(--gold); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.swap-btn:active { background: rgba(201,168,76,0.1); transform: rotate(180deg); }
+
+.actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-translate { flex: 1; padding: 15px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; background: var(--gold); color: var(--navy); border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+.btn-translate:active { opacity: 0.85; transform: scale(0.98); }
+.btn-translate:disabled { opacity: 0.5; }
+.btn-copy, .btn-clear { padding: 15px 14px; font-family: 'DM Sans', sans-serif; font-size: 12px; background: transparent; color: var(--gray); border: 1px solid rgba(138,128,112,0.3); border-radius: 3px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.btn-copy:active, .btn-clear:active { background: rgba(255,255,255,0.05); }
+
+.status-bar { margin-top: 12px; font-size: 11px; color: var(--gray); display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(201,168,76,0.1); }
+.status-msg { display: flex; align-items: center; gap: 7px; }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gray); transition: background 0.3s; }
+.status-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
+.status-dot.success { background: #27AE60; }
+.status-dot.error { background: #E74C3C; }
+
+.history { margin-top: 20px; }
+.history-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.history-title::before, .history-title::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.1); }
+.history-list { display: flex; flex-direction: column; gap: 7px; }
+.history-item { background: rgba(255,255,255,0.02); border: 1px solid rgba(201,168,76,0.08); border-radius: 3px; padding: 10px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.history-item:active { background: rgba(201,168,76,0.06); }
+.history-dir { font-size: 9px; color: var(--gold); letter-spacing: 0.1em; background: rgba(201,168,76,0.1); padding: 2px 7px; border-radius: 2px; display: inline-block; margin-bottom: 5px; }
+.history-src { font-size: 12px; color: var(--ivory); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-res { font-size: 12px; color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.empty-history { text-align: center; padding: 20px; color: rgba(138,128,112,0.4); font-size: 12px; font-style: italic; font-family: 'Playfair Display', serif; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="badge">Traducteur</div>
+    <h1>English <em>&</em> French</h1>
+    <p class="subtitle">영어 · 프랑스어 번역기</p>
+  </header>
+
+  <div class="direction-toggle">
+    <button class="toggle-btn active" id="btn-en-fr" onclick="setDir('en-fr')">
+      <span class="flag">🇬🇧</span> EN → <span class="flag">🇫🇷</span> FR
+    </button>
+    <div class="toggle-divider"></div>
+    <button class="toggle-btn" id="btn-fr-en" onclick="setDir('fr-en')">
+      <span class="flag">🇫🇷</span> FR → <span class="flag">🇬🇧</span> EN
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label" id="src-label">English</div>
+    <textarea id="src" placeholder="번역할 텍스트를 입력하세요..." oninput="updateCount()"></textarea>
+  </div>
+
+  <div class="swap-row">
+    <button class="swap-btn" onclick="swap()">⇄</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label" id="tgt-label">Français</div>
+    <textarea id="tgt" readonly placeholder="번역 결과..."></textarea>
+  </div>
+
+  <div class="actions">
+    <button class="btn-translate" id="btn-tr" onclick="doTranslate()">번역하기</button>
+    <button class="btn-copy" onclick="doCopy()">복사</button>
+    <button class="btn-clear" onclick="doClear()">지우기</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-msg">
+      <div class="status-dot" id="dot"></div>
+      <span id="status">준비 완료</span>
+    </div>
+    <span id="cnt" style="color:rgba(138,128,112,0.5);font-size:11px">0자</span>
+  </div>
+
+  <div class="history">
+    <div class="history-title">번역 기록</div>
+    <div class="history-list" id="hist-list">
+      <div class="empty-history">번역 기록이 없습니다</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let dir = 'en-fr', hist = [];
+
+function setDir(d) {
+  dir = d;
+  document.getElementById('btn-en-fr').classList.toggle('active', d==='en-fr');
+  document.getElementById('btn-fr-en').classList.toggle('active', d==='fr-en');
+  document.getElementById('src-label').textContent = d==='en-fr' ? 'English' : 'Français';
+  document.getElementById('tgt-label').textContent = d==='en-fr' ? 'Français' : 'English';
+  document.getElementById('src').placeholder = d==='en-fr' ? '번역할 영어를 입력하세요...' : 'Entrez le texte français...';
+  document.getElementById('tgt').value = '';
+  setStatus('idle','준비 완료');
+}
+
+function swap() {
+  const res = document.getElementById('tgt').value;
+  setDir(dir==='en-fr'?'fr-en':'en-fr');
+  document.getElementById('src').value = res;
+  updateCount();
+}
+
+function updateCount() {
+  document.getElementById('cnt').textContent = document.getElementById('src').value.length + '자';
+}
+
+function setStatus(type, msg) {
+  const dot = document.getElementById('dot');
+  dot.className = 'status-dot' + (type!=='idle' ? ' '+type : '');
+  document.getElementById('status').textContent = msg;
+}
+
+async function doTranslate() {
+  const text = document.getElementById('src').value.trim();
+  if (!text) { setStatus('error','텍스트를 입력해주세요'); return; }
+  const btn = document.getElementById('btn-tr');
+  btn.disabled = true; btn.textContent = '번역 중...';
+  setStatus('loading','번역 중...');
+  try {
+    const s = dir==='en-fr'?'en':'fr', t = dir==='en-fr'?'fr':'en';
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${s}|${t}`);
+    const data = await res.json();
+    if (data.responseStatus===200) {
+      const result = data.responseData.translatedText;
+      document.getElementById('tgt').value = result;
+      setStatus('success','번역 완료');
+      hist.unshift({dir:dir==='en-fr'?'EN→FR':'FR→EN', src:text, res:result});
+      if(hist.length>5) hist.pop();
+      renderHist();
+    } else { setStatus('error','번역 실패'); }
+  } catch(e) { setStatus('error','인터넷 연결 확인'); }
+  finally { btn.disabled=false; btn.textContent='번역하기'; }
+}
+
+function renderHist() {
+  const el = document.getElementById('hist-list');
+  if(!hist.length) { el.innerHTML='<div class="empty-history">번역 기록이 없습니다</div>'; return; }
+  el.innerHTML = hist.map((h,i)=>`
+    <div class="history-item" onclick="loadHist(${i})">
+      <div class="history-dir">${h.dir}</div>
+      <div class="history-src">${h.src}</div>
+      <div class="history-res">${h.res}</div>
+    </div>`).join('');
+}
+
+function loadHist(i) {
+  const h = hist[i];
+  setDir(h.dir==='EN→FR'?'en-fr':'fr-en');
+  document.getElementById('src').value = h.src;
+  document.getElementById('tgt').value = h.res;
+  updateCount();
+}
+
+function doCopy() {
+  const t = document.getElementById('tgt').value;
+  if(t) navigator.clipboard.writeText(t).then(()=>setStatus('success','복사됨'));
+}
+
+function doClear() {
+  document.getElementById('src').value='';
+  document.getElementById('tgt').value='';
+  updateCount(); setStatus('idle','준비 완료');
+}
+
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+</body>
+</html>
